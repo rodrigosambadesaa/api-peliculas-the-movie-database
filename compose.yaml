@@ -1,0 +1,35 @@
+name: cinewave
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_PATH: /app/data/cinewave.db
+      JWT_SECRET: ${JWT_SECRET:-cinewave-local-docker-secret}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      TMDB_READ_TOKEN: ${TMDB_READ_TOKEN:-}
+      TMDB_API_KEY: ${TMDB_API_KEY:-}
+      TMDB_LANGUAGE: ${TMDB_LANGUAGE:-es-ES}
+      TMDB_REGION: ${TMDB_REGION:-ES}
+      WEB_ORIGIN: http://localhost:${WEB_PORT:-8088}
+    volumes:
+      - cinewave_data:/app/data
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    ports:
+      - "${WEB_PORT:-8088}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  cinewave_data:

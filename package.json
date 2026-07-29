@@ -1,6 +1,22 @@
 {
-  "dependencies": {
-    "express": "^4.19.2",
-    "node-fetch": "^2.7.0"
+  "name": "cinewave",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Plataforma social de cine con catálogo de TMDB",
+  "workspaces": [
+    "apps/api",
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,cyan \"npm run dev -w @cinewave/api\" \"npm run dev -w @cinewave/web\"",
+    "build": "npm run build -w @cinewave/web",
+    "start": "npm run start -w @cinewave/api",
+    "test": "npm run test -w @cinewave/api && npm run test -w @cinewave/web"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

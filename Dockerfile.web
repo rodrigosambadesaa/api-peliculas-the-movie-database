@@ -1,0 +1,15 @@
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY apps/api/package.json apps/api/package.json
+COPY apps/web/package.json apps/web/package.json
+RUN npm ci --workspace=@cinewave/web --include-workspace-root
+COPY apps/web ./apps/web
+RUN npm run build --workspace=@cinewave/web
+
+FROM nginx:1.27-alpine
+COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
+EXPOSE 80
+HEALTHCHECK --interval=20s --timeout=4s --start-period=5s --retries=3 \
+  CMD wget -q -O - http://127.0.0.1/ || exit 1
