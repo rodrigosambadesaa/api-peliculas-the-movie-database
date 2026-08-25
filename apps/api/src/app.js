@@ -18,6 +18,7 @@ const userRoutes = require('./routes/users');
 function createApp() {
   const app = express();
   app.disable('x-powered-by');
+  app.set('trust proxy', config.trustProxy);
   app.use(
     helmet({
       crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -25,25 +26,32 @@ function createApp() {
   );
   app.use(
     cors({
-      origin: config.webOrigin.split(',').map((origin) => origin.trim()),
+      origin: config.webOrigins,
       credentials: true,
     }),
   );
   app.use(express.json({ limit: '100kb' }));
   app.use(cookieParser());
-  app.use(currentUser);
 
   if (config.nodeEnv !== 'test') {
-    app.use(
-      '/api/auth',
-      rateLimit({
-        windowMs: 15 * 60 * 1000,
-        limit: 100,
-        standardHeaders: 'draft-7',
-        legacyHeaders: false,
-      }),
-    );
+    const authLimiter = rateLimit({
+      windowMs: 15 * 60 * 1000,
+      limit: 20,
+      standardHeaders: 'draft-7',
+      legacyHeaders: false,
+      handler: (_req, res, _next, options) =>
+        res.status(options.statusCode).json({
+          error: {
+            code: 'RATE_LIMITED',
+            message: 'Demasiados intentos de autenticación. Inténtalo de nuevo más tarde.',
+          },
+        }),
+    });
+    app.use('/api/auth/login', authLimiter);
+    app.use('/api/auth/register', authLimiter);
   }
+
+  app.use(currentUser);
 
   app.get('/api/health', (_req, res) => {
     res.json({
