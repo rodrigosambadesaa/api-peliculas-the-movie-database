@@ -1,5 +1,7 @@
 # CineWave
 
+[![CI](https://github.com/rodrigosambadesaa/api-peliculas-the-movie-database/actions/workflows/ci.yml/badge.svg)](https://github.com/rodrigosambadesaa/api-peliculas-the-movie-database/actions/workflows/ci.yml)
+
 Una plataforma social de cine inspirada en la experiencia de IMDb: catálogo, búsqueda,
 filtros, fichas completas, perfiles, valoraciones, reseñas, favoritos y listas para ver.
 El proyecto original de un solo endpoint se ha convertido en una aplicación web completa,
@@ -21,22 +23,33 @@ segura y dockerizada.
 - API REST con validación, límites de peticiones, caché de TMDB y errores normalizados.
 - Modo demo automático cuando no se configura una credencial de TMDB.
 - Contenedores separados para API y web, proxy inverso y volumen persistente.
+- CI para ejecutar tests, compilar la web y validar Docker Compose en cada pull request.
+- Actualizaciones automáticas de dependencias mediante Dependabot.
 
 ## Puesta en marcha con Docker
 
 1. Copia `.env.example` como `.env`.
-2. Añade `TMDB_READ_TOKEN` en `.env` para usar el catálogo completo. Puedes obtener el
+2. Genera un `JWT_SECRET` aleatorio de **32 caracteres como mínimo** y añádelo a `.env`.
+   Por ejemplo, con OpenSSL:
+
+   ```bash
+   openssl rand -hex 32
+   ```
+
+3. Opcionalmente, añade `TMDB_READ_TOKEN` para usar el catálogo completo. Puedes obtener el
    token en la configuración de API de tu cuenta de TMDB.
-3. Arranca la aplicación:
+4. Arranca la aplicación:
 
    ```bash
    docker compose up --build
    ```
 
-4. Abre [http://localhost:8088](http://localhost:8088).
+5. Abre [http://localhost:8088](http://localhost:8088).
 
-Sin token de TMDB la aplicación arranca igualmente con un catálogo de demostración.
-Los usuarios, listas, valoraciones y reseñas se guardan en el volumen `cinewave_data`.
+Docker se negará a arrancar la API en modo producción si `JWT_SECRET` está vacío o no alcanza
+la longitud mínima. Sin credenciales de TMDB la aplicación arranca igualmente con un catálogo
+de demostración. Los usuarios, listas, valoraciones y reseñas se guardan en el volumen
+`cinewave_data`.
 
 Para detener la aplicación:
 
@@ -66,6 +79,10 @@ npm test
 npm start
 ```
 
+Antes de abrir un pull request es recomendable ejecutar al menos `npm test` y `npm run build`.
+El workflow de GitHub Actions repite esas comprobaciones con una instalación limpia mediante
+`npm ci` y valida además `compose.yaml`.
+
 ## API
 
 Los endpoints principales están bajo `/api`:
@@ -85,6 +102,7 @@ validación y manejo de resultados vacíos.
 ## Estructura
 
 ```text
+.github/        CI y actualización automática de dependencias
 apps/
   api/          API Express y base de datos SQLite
   web/          React, Vite y estilos de la interfaz
@@ -95,10 +113,24 @@ Dockerfile.web
 
 ## Seguridad
 
-La credencial de TMDB ya no está incluida en el código. Las contraseñas se almacenan con
-hash bcrypt, las sesiones expiran, los datos se validan en el servidor y se aplican
-cabeceras seguras y límites de peticiones. En un despliegue público usa un `JWT_SECRET`
-largo, HTTPS y una política de copias de seguridad para el volumen.
+La credencial de TMDB no está incluida en el código. Las contraseñas se almacenan con hash
+bcrypt, las sesiones expiran, los datos se validan en el servidor y se aplican cabeceras
+seguras y límites de peticiones.
+
+En producción:
+
+- `JWT_SECRET` es obligatorio y debe tener al menos 32 caracteres.
+- Usa HTTPS y configura `COOKIE_SECURE=true`.
+- Configura `WEB_ORIGIN` únicamente con los orígenes web autorizados; admite varios separados
+  por comas.
+- Solo habilita `TRUST_PROXY` cuando la API esté realmente detrás de un proxy de confianza.
+  El `compose.yaml` incluido usa un salto porque Nginx es el único proxy entre el cliente y
+  Express; esto permite que el rate limiting use la IP real del cliente.
+- Mantén una política de copias de seguridad para el volumen persistente.
+
+Nginx añade cabeceras defensivas a la aplicación web y reenvía `X-Forwarded-For` y
+`X-Forwarded-Proto` a la API. Los intentos de login y registro están limitados de forma
+independiente del resto de endpoints de autenticación.
 
 Los datos cinematográficos y las imágenes pertenecen a TMDB. Este producto usa la API de
 TMDB, pero no está respaldado ni certificado por TMDB.
