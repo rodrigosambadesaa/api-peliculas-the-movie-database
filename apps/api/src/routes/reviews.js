@@ -187,7 +187,14 @@ router.delete('/:reviewId', requireAuth, (req, res, next) => {
 router.put('/:reviewId/like', requireAuth, (req, res, next) => {
   try {
     const reviewId = z.coerce.number().int().positive().parse(req.params.reviewId);
-    getDb()
+    const db = getDb();
+    const review = db.prepare('SELECT id FROM reviews WHERE id = ?').get(reviewId);
+    if (!review) {
+      return res.status(404).json({
+        error: { code: 'REVIEW_NOT_FOUND', message: 'No se ha encontrado la reseña.' },
+      });
+    }
+    db
       .prepare('INSERT OR IGNORE INTO review_likes (user_id, review_id) VALUES (?, ?)')
       .run(req.user.id, reviewId);
     res.status(201).json({ liked: true });

@@ -84,7 +84,7 @@ async function searchMovies(query, page = 1) {
 }
 
 async function discoverMovies(params) {
-  if (!hasCredentials()) return demoSearch('');
+  if (!hasCredentials()) return demoSearch('', params);
   return request('/discover/movie', {
     page: params.page || 1,
     sort_by: params.sortBy || 'popularity.desc',

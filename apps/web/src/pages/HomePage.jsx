@@ -12,11 +12,30 @@ export function HomePage() {
   const [query, setQuery] = useState('');
   const [heroSaved, setHeroSaved] = useState(false);
   const navigate = useNavigate();
-  const { requireUser } = useAuth();
+  const { user, requireUser } = useAuth();
 
   useEffect(() => {
     api.get('/movies/home').then(setData).catch((requestError) => setError(requestError.message));
   }, []);
+
+  useEffect(() => {
+    if (!user || !data?.hero) {
+      setHeroSaved(false);
+      return;
+    }
+    let active = true;
+    api
+      .get('/library?type=watchlist')
+      .then(({ items }) => {
+        if (active) setHeroSaved(items.some((item) => item.movieId === data.hero.id));
+      })
+      .catch(() => {
+        if (active) setHeroSaved(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [user, data?.hero]);
 
   if (error) {
     return (
@@ -102,7 +121,7 @@ export function HomePage() {
                     }
                     setHeroSaved((value) => !value);
                   } catch {
-                    // Conserva el estado visual si la petición no se completa.
+                    // La interfaz solo cambia cuando el servidor confirma la operación.
                   }
                 })
               }

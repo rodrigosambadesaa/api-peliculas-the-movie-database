@@ -36,8 +36,13 @@ export function DiscoverPage({ searchMode = false }) {
   useEffect(() => {
     setData(null);
     setError('');
+    const searchQuery = params.get('q')?.trim() || '';
+    if (searchMode && !searchQuery) {
+      setData({ page: 1, total_pages: 0, total_results: 0, results: [] });
+      return;
+    }
     const path = searchMode
-      ? `/movies/search?q=${encodeURIComponent(params.get('q') || '')}`
+      ? `/movies/search?q=${encodeURIComponent(searchQuery)}`
       : `/movies/discover?${params.toString()}`;
     api.get(path).then(setData).catch((requestError) => setError(requestError.message));
   }, [location.search, searchMode, params]);

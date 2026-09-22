@@ -30,6 +30,7 @@ export function ProfilePage() {
   const [library, setLibrary] = useState([]);
   const [ratings, setRatings] = useState([]);
   const [message, setMessage] = useState('');
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -37,11 +38,13 @@ export function ProfilePage() {
       api.get('/users/me/dashboard'),
       api.get('/library'),
       api.get('/users/me/ratings'),
-    ]).then(([dashboardData, libraryData, ratingsData]) => {
-      setDashboard(dashboardData);
-      setLibrary(libraryData.items);
-      setRatings(ratingsData.ratings);
-    });
+    ])
+      .then(([dashboardData, libraryData, ratingsData]) => {
+        setDashboard(dashboardData);
+        setLibrary(libraryData.items);
+        setRatings(ratingsData.ratings);
+      })
+      .catch((requestError) => setLoadError(requestError.message));
   }, [user]);
 
   const tabItems = useMemo(() => {
@@ -112,6 +115,7 @@ export function ProfilePage() {
         </nav>
 
         <section className="profile-content">
+          {loadError && <p className="form-error">{loadError}</p>}
           {currentTab === 'resumen' && (
             <>
               <div className="profile-section-heading">

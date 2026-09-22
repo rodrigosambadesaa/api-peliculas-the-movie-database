@@ -51,6 +51,11 @@ router.get('/:id', async (req, res, next) => {
   try {
     const id = z.coerce.number().int().positive().parse(req.params.id);
     const movie = await tmdb.getMovie(id);
+    if (!movie) {
+      return res.status(404).json({
+        error: { code: 'MOVIE_NOT_FOUND', message: 'No se ha encontrado la película.' },
+      });
+    }
     const db = getDb();
     const community = db
       .prepare(

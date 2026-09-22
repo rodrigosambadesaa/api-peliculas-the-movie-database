@@ -115,12 +115,16 @@ export function MoviePage() {
 
   async function rate(score) {
     requireUser(async () => {
-      await api.put(`/ratings/${movie.id}`, { score, movie: moviePayload(movie) });
-      setMovie((current) => ({
-        ...current,
-        viewer: { ...current.viewer, rating: score },
-      }));
-      setToast(`Tu puntuación: ${score}/10`);
+      try {
+        await api.put(`/ratings/${movie.id}`, { score, movie: moviePayload(movie) });
+        setMovie((current) => ({
+          ...current,
+          viewer: { ...current.viewer, rating: score },
+        }));
+        setToast(`Tu puntuación: ${score}/10`);
+      } catch (requestError) {
+        setToast(requestError.message);
+      }
     });
   }
 
@@ -131,8 +135,12 @@ export function MoviePage() {
       // El usuario puede cancelar el diálogo del sistema.
     }
     if (!navigator.share) {
-      await navigator.clipboard.writeText(window.location.href);
-      setToast('Enlace copiado');
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        setToast('Enlace copiado');
+      } catch {
+        setToast('No se ha podido copiar el enlace');
+      }
     }
   }
 

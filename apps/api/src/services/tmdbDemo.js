@@ -192,20 +192,41 @@ const demoHome = {
   demoMode: true,
 };
 
-function demoSearch(query) {
+function demoSearch(query, options = {}) {
   const normalized = query.trim().toLocaleLowerCase('es');
-  const results = normalized
+  let results = normalized
     ? movies.filter(
         (movie) =>
           movie.title.toLocaleLowerCase('es').includes(normalized) ||
           movie.original_title.toLocaleLowerCase('es').includes(normalized),
       )
-    : movies;
+    : [...movies];
+
+  if (options.genre) {
+    results = results.filter((movie) => movie.genre_ids.includes(Number(options.genre)));
+  }
+  if (options.year) {
+    results = results.filter((movie) => Number(movie.release_date.slice(0, 4)) === Number(options.year));
+  }
+  if (options.minRating !== undefined) {
+    results = results.filter((movie) => movie.vote_average >= Number(options.minRating));
+  }
+
+  const sorters = {
+    'popularity.desc': (a, b) => b.popularity - a.popularity,
+    'vote_average.desc': (a, b) => b.vote_average - a.vote_average,
+    'primary_release_date.desc': (a, b) => b.release_date.localeCompare(a.release_date),
+    // El catálogo demo no contiene recaudación; popularidad es la aproximación más útil.
+    'revenue.desc': (a, b) => b.popularity - a.popularity,
+  };
+  results.sort(sorters[options.sortBy] || sorters['popularity.desc']);
+
   return { page: 1, total_pages: 1, total_results: results.length, results };
 }
 
 function demoMovie(id) {
-  const movie = movies.find((entry) => entry.id === id) || movies[0];
+  const movie = movies.find((entry) => entry.id === id);
+  if (!movie) return null;
   return {
     ...movie,
     runtime: 169,

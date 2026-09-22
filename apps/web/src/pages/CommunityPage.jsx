@@ -7,10 +7,11 @@ import { useAuth } from '../context/AuthContext';
 
 export function CommunityPage() {
   const [data, setData] = useState(null);
+  const [error, setError] = useState('');
   const { user, openAuth } = useAuth();
 
   useEffect(() => {
-    api.get('/reviews/latest').then(setData);
+    api.get('/reviews/latest').then(setData).catch((requestError) => setError(requestError.message));
   }, []);
 
   return (
@@ -29,7 +30,13 @@ export function CommunityPage() {
           <div className="section-heading">
             <div><span className="eyebrow">Recién publicadas</span><h2>Opiniones que merece la pena leer</h2></div>
           </div>
-          {data?.reviews?.length ? (
+          {error ? (
+            <div className="inline-state">
+              <MessageSquareText />
+              <h3>No pudimos cargar la conversación</h3>
+              <p>{error}</p>
+            </div>
+          ) : data?.reviews?.length ? (
             data.reviews.map((review) => (
               <div className="community-review" key={review.id}>
                 {review.movie?.poster_path && (
